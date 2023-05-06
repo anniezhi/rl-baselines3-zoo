@@ -150,6 +150,8 @@ if __name__ == "__main__":
     )
 
     grids = []
+    agent_poss = []
+    agent_actions = []
 
     obs = env.reset()
     lstm_states = None
@@ -158,8 +160,10 @@ if __name__ == "__main__":
     try:
         # for _ in range(video_length + 1):
         for _ in range(video_num):
-            ## save grid
+            ## save grid, agent pos, actions
             grid = env.env.envs[0].unwrapped.render_no_agent()
+            agent_pos = []
+            actions = []
 
             ## save video
             while not dones:
@@ -171,10 +175,15 @@ if __name__ == "__main__":
                 )
                 if not args.no_render:
                     env.render()
+
+                actions.append(action)
+                agent_pos.append(env.env.envs[0].unwrapped.render_only_agent())
                 obs, _, dones, _ = env.step(action)  # type: ignore[assignment]
                 # episode_starts = dones
 
             grids.append(grid)
+            agent_poss.append(np.array(agent_pos))
+            agent_actions.append(np.concatenate(actions))
 
             obs = env.reset()
             lstm_states = None
@@ -188,6 +197,16 @@ if __name__ == "__main__":
 
     ## save grids
     grids = np.array(grids)
-    print('Saving grids... ', end="")
+    print('Saving grids... ', end="\n")
     np.save(video_folder+'/env_grids.npy', grids)
+
+    ## save agent poss
+    print('Saving agent poss...', end="\n")
+    np.savez(video_folder+'/agent_poss.npz', *agent_poss)
+    # to load: new = [agent_poss[_] for _ in [*agent_poss]]
+
+    ## save agent actions
+    print('Saving agent actions...', end="\n")
+    np.savez(video_folder+'/actions.npz', *agent_actions)
+    # to load: new = [agent_actions[_] for _ in [*agent_actions]]
 
