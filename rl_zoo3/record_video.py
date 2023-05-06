@@ -17,7 +17,8 @@ if __name__ == "__main__":
     parser.add_argument("-f", "--folder", help="Log folder", type=str, default="rl-trained-agents")
     parser.add_argument("-o", "--output-folder", help="Output folder", type=str)
     parser.add_argument("--algo", help="RL Algorithm", default="ppo", type=str, required=False, choices=list(ALGOS.keys()))
-    parser.add_argument("-n", "--n-timesteps", help="number of timesteps", default=1000, type=int)
+    parser.add_argument("--n-timesteps", help="number of timesteps", default=1000, type=int)
+    parser.add_argument("--n-videos", help="number of videos", default=5, type=int)
     parser.add_argument("--n-envs", help="number of environments", default=1, type=int)
     parser.add_argument("--deterministic", action="store_true", default=False, help="Use deterministic actions")
     parser.add_argument("--stochastic", action="store_true", default=False, help="Use stochastic actions")
@@ -55,6 +56,7 @@ if __name__ == "__main__":
     video_folder = args.output_folder
     seed = args.seed
     video_length = args.n_timesteps
+    video_num = args.n_videos
     n_envs = args.n_envs
 
     name_prefix, model_path, log_path = get_model_path(
@@ -128,7 +130,8 @@ if __name__ == "__main__":
 
     print(f"Loading {model_path}")
 
-    model = ALGOS[algo].load(model_path, env=env, custom_objects=custom_objects, **kwargs)
+    # model = ALGOS[algo].load(model_path, env=env, custom_objects=custom_objects, **kwargs)
+    model = ALGOS[algo].load(model_path, custom_objects=custom_objects, **kwargs)
 
     # Deterministic by default except for atari games
     stochastic = args.stochastic or (is_atari or is_minigrid) and not args.deterministic
@@ -146,22 +149,45 @@ if __name__ == "__main__":
         name_prefix=name_prefix,
     )
 
+    grids = []
+
     obs = env.reset()
     lstm_states = None
     episode_starts = np.ones((env.num_envs,), dtype=bool)
+    dones = 0
     try:
-        for _ in range(video_length + 1):
-            action, lstm_states = model.predict(
-                obs,  # type: ignore[arg-type]
-                state=lstm_states,
-                episode_start=episode_starts,
-                deterministic=deterministic,
-            )
-            if not args.no_render:
-                env.render()
-            obs, _, dones, _ = env.step(action)  # type: ignore[assignment]
-            episode_starts = dones
+        # for _ in range(video_length + 1):
+        for _ in range(video_num):
+            ## save grid
+            grid = env.env.envs[0].unwrapped.render_no_agent()
+
+            ## save video
+            while not dones:
+                action, lstm_states = model.predict(
+                    obs,  # type: ignore[arg-type]
+                    state=lstm_states,
+                    episode_start=episode_starts,
+                    deterministic=deterministic,
+                )
+                if not args.no_render:
+                    env.render()
+                obs, _, dones, _ = env.step(action)  # type: ignore[assignment]
+                # episode_starts = dones
+
+            grids.append(grid)
+
+            obs = env.reset()
+            lstm_states = None
+            episode_starts = np.ones((env.num_envs,), dtype=bool)
+            dones = 0
+
     except KeyboardInterrupt:
         pass
 
     env.close()
+
+    ## save grids
+    grids = np.array(grids)
+    print('Saving grids... ', end="")
+    np.save(video_folder+'/env_grids.npy', grids)
+

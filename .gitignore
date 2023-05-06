@@ -31,3 +31,11 @@ keys/
 .cache
 *.lprof
 *.prof
+
+# data
+*/video/
+*/videos/
+*.mp4
+*.json
+rl-trained-agents/
+rl-trained-agents
