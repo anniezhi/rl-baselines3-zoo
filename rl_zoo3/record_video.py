@@ -14,6 +14,8 @@ from rl_zoo3.utils import ALGOS, StoreDict, create_test_env, get_model_path, get
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--env", help="environment ID", type=EnvironmentName, default="CartPole-v1")
+    parser.add_argument("--agent-type", type=str, default='optimal', help="Agent type", choices=['optimal','laggy'])
+    parser.add_argument("--lag-prob", type=float, default=0.8, help="laggy action activate probability")
     parser.add_argument("-f", "--folder", help="Log folder", type=str, default="rl-trained-agents")
     parser.add_argument("-o", "--output-folder", help="Output folder", type=str)
     parser.add_argument("--algo", help="RL Algorithm", default="ppo", type=str, required=False, choices=list(ALGOS.keys()))
@@ -68,6 +70,8 @@ if __name__ == "__main__":
         args.load_checkpoint,
         args.load_last_checkpoint,
     )
+
+    name_prefix = name_prefix + '-' + args.agent_type
 
     print(f"Loading {model_path}")
     off_policy_algos = ["qrdqn", "dqn", "ddpg", "sac", "her", "td3", "tqc"]
@@ -138,7 +142,7 @@ if __name__ == "__main__":
     deterministic = not stochastic
 
     if video_folder is None:
-        video_folder = os.path.join(log_path, "videos")
+        video_folder = os.path.join(log_path, "videos-"+args.agent_type)
 
     # Note: apparently it renders by default
     env = VecVideoRecorder(
@@ -166,13 +170,26 @@ if __name__ == "__main__":
             actions = []
 
             ## save video
+
+            last_laggy_action = None
+
             while not dones:
-                action, lstm_states = model.predict(
+                action_opt, lstm_states = model.predict(
                     obs,  # type: ignore[arg-type]
                     state=lstm_states,
                     episode_start=episode_starts,
                     deterministic=deterministic,
                 )
+
+                if args.agent_type == 'laggy':
+                    if last_laggy_action is None or np.random.random() >= args.lag_prob:
+                        last_laggy_action = action_opt
+                        action = action_opt
+                    else:
+                        action = last_laggy_action
+                else:
+                    action = action_opt
+
                 if not args.no_render:
                     env.render()
 
