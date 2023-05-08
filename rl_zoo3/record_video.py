@@ -194,7 +194,7 @@ if __name__ == "__main__":
                     env.render()
 
                 actions.append(action)
-                agent_pos.append(*[env.env.envs[0].lander.position]) # [x,y]
+                agent_pos.append([*env.env.envs[0].lander.position]) # [x,y]
                 obs, _, dones, _ = env.step(action)  # type: ignore[assignment]
                 # episode_starts = dones
 
