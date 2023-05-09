@@ -195,6 +195,11 @@ if __name__ == "__main__":
 
                 actions.append(action)
                 agent_pos.append([*env.env.envs[0].lander.position]) # [x,y]
+                # position to image: env.render() [400, 600, 3]
+                #                    SCALE = 30
+                #                    x = 400 - pos[0] * SCALE
+                #                    y = pos[1] * SCALE
+                
                 obs, _, dones, _ = env.step(action)  # type: ignore[assignment]
                 # episode_starts = dones
 
