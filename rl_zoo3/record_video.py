@@ -14,7 +14,7 @@ from rl_zoo3.utils import ALGOS, StoreDict, create_test_env, get_model_path, get
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--env", help="environment ID", type=EnvironmentName, default="CartPole-v1")
-    parser.add_argument("--agent-type", type=str, default='optimal', help="Agent type", choices=['optimal','laggy','laggy-small'])
+    parser.add_argument("--agent-type", type=str, default='optimal', help="Agent type", choices=['optimal','laggy','laggy-small','laggy-mid'])
     parser.add_argument("--lag-prob", type=float, default=0.8, help="laggy action activate probability")
     parser.add_argument("-f", "--folder", help="Log folder", type=str, default="rl-trained-agents")
     parser.add_argument("-o", "--output-folder", help="Output folder", type=str)
@@ -197,8 +197,8 @@ if __name__ == "__main__":
                 agent_pos.append([*env.env.envs[0].lander.position]) # [x,y]
                 # position to image: env.render() [400, 600, 3]
                 #                    SCALE = 30
-                #                    x = 400 - pos[0] * SCALE
-                #                    y = pos[1] * SCALE
+                #                    x = 400 - pos[1] * SCALE
+                #                    y = pos[0] * SCALE
                 
                 obs, _, dones, _ = env.step(action)  # type: ignore[assignment]
                 # episode_starts = dones
